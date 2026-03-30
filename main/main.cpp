@@ -41,10 +41,10 @@ static const char *TAG = "face_detector";
 #define MIN_PULSE_WIDTH     500
 #define MAX_PULSE_WIDTH     2500
 
-#define CAM_WIDTH 240
-#define CAM_HEIGHT 240
-#define CAM_MID_X 120
-#define CAM_MID_Y 120
+#define CAM_WIDTH 160
+#define CAM_HEIGHT 120
+#define CAM_MID_X 80
+#define CAM_MID_Y 60
 
 QueueHandle_t servo_queue;
 
@@ -76,7 +76,7 @@ static esp_err_t init_camera(void)
     config.pin_reset = RESET_GPIO_NUM;
     config.xclk_freq_hz = 10000000;
     config.pixel_format = PIXFORMAT_RGB565;
-    config.frame_size = FRAMESIZE_240X240;
+    config.frame_size = FRAMESIZE_QQVGA;
     config.jpeg_quality = 12;
     config.fb_count = 2;
     config.fb_location = CAMERA_FB_IN_PSRAM;
@@ -148,17 +148,17 @@ void servo_task(void *arg)
     float current_angle_y = 90.0;
     float target_angle_y = 90.0;
     
-    //60 degrees / 240 pixels = 0.25 deg/pixel
-    float degrees_per_pixel = 0.25; 
-    
+    // Calculate scaling for servo movement based on new resolution
+    float degrees_per_pixel_x = 60.0f / CAM_WIDTH;
+    float degrees_per_pixel_y = 60.0f / CAM_HEIGHT;
 
     while (1) {
         face_coords_t coords;
 
         if (xQueueReceive(servo_queue, &coords, 0)) {
             
-            target_angle_x = current_angle_x - (coords.x - CAM_MID_X) * degrees_per_pixel;
-            target_angle_y = current_angle_y + (coords.y - CAM_MID_Y) * degrees_per_pixel;
+            target_angle_x = current_angle_x - (coords.x - CAM_MID_X) * degrees_per_pixel_x;
+            target_angle_y = current_angle_y + (coords.y - CAM_MID_Y) * degrees_per_pixel_y;
             
             if (target_angle_x < 0) target_angle_x = 0;
             if (target_angle_x > 180) target_angle_x = 180;
