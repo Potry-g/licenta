@@ -212,7 +212,7 @@ static bool find_color_blob(camera_fb_t *fb, face_coords_t *coords) {
     
     // INCREASED THRESHOLD: A single grid cell must have at least 25 valid pixels 
     // to be considered a valid object (ignores small noise)
-    if (max_count < 25) {
+    if (max_count < 60) {
         return false;
     }
     
@@ -249,7 +249,7 @@ static bool find_color_blob(camera_fb_t *fb, face_coords_t *coords) {
     }
     
     // INCREASED THRESHOLD: Ensure the total blob has at least 40 pixels
-    if (final_count > 40) {
+    if (final_count > 80) {
         coords->x = total_x / final_count;
         coords->y = total_y / final_count;
         return true;
@@ -303,7 +303,7 @@ void servo_task(void *arg)
     float target_angle_x = 90.0;
     float current_angle_y = 90.0;
     float target_angle_y = 90.0;
-    
+
     float degrees_per_pixel_x = 40.0f / CAM_WIDTH;
     float degrees_per_pixel_y = 40.0f / CAM_HEIGHT;
 
@@ -333,12 +333,12 @@ void servo_task(void *arg)
             if (target_angle_y < 60) target_angle_y = 60;
             if (target_angle_y > 120) target_angle_y = 120;
 
-            ESP_LOGI(TAG, "Target: (%d, %d) | TgtAngle: (%.1f, %.1f)", 
+            ESP_LOGD(TAG, "Target: (%d, %d) | TgtAngle: (%.1f, %.1f)", 
                      coords.x, coords.y, target_angle_x, target_angle_y);
         }
 
         // Use dynamic smoothing based on tracking mode to prevent color tracking oscillations
-        float smoothing = (current_mode == MODE_FACE) ? 0.13 : 0.07;
+        float smoothing = (current_mode == MODE_FACE) ? 0.13 : 0.04;
 
         current_angle_x = (current_angle_x * (1.0 - smoothing)) + (target_angle_x * smoothing);
         current_angle_y = (current_angle_y * (1.0 - smoothing)) + (target_angle_y * smoothing);
@@ -406,7 +406,7 @@ void vision_task(void *arg)
             }
         } else if (current_mode == MODE_COLOR) {
             if (find_color_blob(fb, &coords)) {
-                ESP_LOGI(TAG, "Color Blob found at: (%d, %d)", coords.x, coords.y);
+                ESP_LOGD(TAG, "Color Blob found at: (%d, %d)", coords.x, coords.y);
                 xQueueSend(servo_queue, &coords, 0);
             }
         }
